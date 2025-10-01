@@ -1,5 +1,6 @@
 import express from "express";
 import bodyParser from "body-parser";
+import cors from "cors";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -126,6 +127,7 @@ client.login(BOT_TOKEN);
 
 const app = express();
 app.use(bodyParser.json());
+app.use(cors());
 
 app.post("/assign-role", async (req, res) => {
     const { discordId, action } = req.body;
