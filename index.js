@@ -151,5 +151,10 @@ app.post("/assign-role", async (req, res) => {
         res.status(500).json({ error: "Failed to update role" });
     }
 });
+
+app.get("/", (req, res) => {
+    res.status(200).send("Server is alive 🚀");
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`🌐 Bot API running on port ${PORT}`));
