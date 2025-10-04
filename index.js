@@ -129,7 +129,7 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
-app.post("/assign-role", async (req, res) => {
+app.post("/assign-player-role", async (req, res) => {
     const { discordId, action } = req.body;
     const ROLE_ID = "1419359929688657920";
 
@@ -151,6 +151,57 @@ app.post("/assign-role", async (req, res) => {
     } catch (err) {
         console.error("❌ Role update failed:", err);
         res.status(500).json({ error: "Failed to update role" });
+    }
+});
+
+app.post("/assign-captain-role", async (req, res) => {
+    const { discordId, action } = req.body;
+    const CAPTAIN_ROLE_ID = "1409252277830549655";
+
+    try {
+        const guild = await client.guilds.fetch(GUILD_ID);
+        const member = await guild.members.fetch(discordId);
+
+        if (action === "add") {
+            await member.roles.add(CAPTAIN_ROLE_ID);
+            console.log(`✅ Captain role added to ${discordId}`);
+        } else if (action === "remove") {
+            await member.roles.remove(CAPTAIN_ROLE_ID);
+            console.log(`🗑 Captain role removed from ${discordId}`);
+        } else {
+            return res.status(400).json({ error: "Invalid action. Use 'add' or 'remove'." });
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error("❌ Captain role update failed:", err);
+        res.status(500).json({ error: "Failed to update captain role" });
+    }
+});
+
+// Add/Remove Team Vice Captain Role
+app.post("/assign-vice-captain-role", async (req, res) => {
+    const { discordId, action } = req.body;
+    const VICE_CAPTAIN_ROLE_ID = "1419363127723560960";
+
+    try {
+        const guild = await client.guilds.fetch(GUILD_ID);
+        const member = await guild.members.fetch(discordId);
+
+        if (action === "add") {
+            await member.roles.add(VICE_CAPTAIN_ROLE_ID);
+            console.log(`✅ Vice Captain role added to ${discordId}`);
+        } else if (action === "remove") {
+            await member.roles.remove(VICE_CAPTAIN_ROLE_ID);
+            console.log(`🗑 Vice Captain role removed from ${discordId}`);
+        } else {
+            return res.status(400).json({ error: "Invalid action. Use 'add' or 'remove'." });
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error("❌ Vice Captain role update failed:", err);
+        res.status(500).json({ error: "Failed to update vice captain role" });
     }
 });
 
