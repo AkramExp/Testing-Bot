@@ -8,6 +8,7 @@ dotenv.config();
 import { Client, GatewayIntentBits } from "discord.js";
 import mongoose from "mongoose";
 import Member from "./member.model.js";
+import Player from "./player.model.js";
 
 const client = new Client({
     intents: [
@@ -32,6 +33,36 @@ async function connectDB() {
         console.error("MongoDB connection error:", err);
     }
 }
+
+const updatePlayerMemberReference = async (discordId, newMemberId) => {
+    try {
+        const currentPlayer = await Player.findOne({ discordId });
+
+        if (!currentPlayer) {
+            console.log(`⚠️ No player found for discordId: ${discordId}`);
+            return null;
+        }
+
+        const oldMemberId = currentPlayer.member;
+
+        const player = await Player.findOneAndUpdate(
+            { discordId },
+            { member: newMemberId },
+            { new: true }
+        ).populate("member");
+
+        if (oldMemberId && oldMemberId.toString() !== newMemberId.toString()) {
+            await Member.findByIdAndDelete(oldMemberId);
+            console.log(`🗑 Deleted old member document: ${oldMemberId}`);
+        }
+
+        console.log(`🔗 Player updated with new member reference for ${discordId}`);
+        return player;
+    } catch (error) {
+        console.error("Error updating player member reference:", error);
+        throw error;
+    }
+};
 
 client.once("ready", async () => {
     console.log(`Logged in as ${client.user.tag}`);
@@ -70,7 +101,7 @@ client.on("guildMemberUpdate", async (oldMember, newMember) => {
         const hasRoleNow = newMember.roles.cache.has(VERIFIED_ROLE_ID);
 
         if (!hadRole && hasRoleNow) {
-            await Member.findOneAndUpdate(
+            const memberDoc = await Member.findOneAndUpdate(
                 { discordId: newMember.id },
                 {
                     discordName: `${newMember.user.username}`,
@@ -80,6 +111,10 @@ client.on("guildMemberUpdate", async (oldMember, newMember) => {
             );
 
             console.log(`✅ New verified member stored: ${newMember.user.username}`);
+
+            if (memberDoc?._id) {
+                await updatePlayerMemberReference(newMember.id, memberDoc._id);
+            }
         }
     } catch (err) {
         console.error("Error storing new verified member:", err);
