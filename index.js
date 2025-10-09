@@ -121,7 +121,7 @@ client.on("guildMemberUpdate", async (oldMember, newMember) => {
             }
 
             // Step 3: Fetch player by discordID (case-sensitive match!)
-            const player = await Player.findOne({ discordID: newMember.id });
+            const player = await Player.findOne({ discordId: newMember.id });
             if (!player) {
                 console.log(`ℹ️ No player found for ${newMember.user.username}, skipping role assignment.`);
                 return;
