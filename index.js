@@ -9,6 +9,7 @@ import { Client, GatewayIntentBits } from "discord.js";
 import mongoose from "mongoose";
 import Member from "./member.model.js";
 import Player from "./player.model.js";
+import Team from "./team.model.js";
 
 const client = new Client({
     intents: [
@@ -100,7 +101,9 @@ client.on("guildMemberUpdate", async (oldMember, newMember) => {
         const hadRole = oldMember.roles.cache.has(VERIFIED_ROLE_ID);
         const hasRoleNow = newMember.roles.cache.has(VERIFIED_ROLE_ID);
 
+        // Run only when the verified role is newly added
         if (!hadRole && hasRoleNow) {
+            // Step 1: Create or update Member document
             const memberDoc = await Member.findOneAndUpdate(
                 { discordId: newMember.id },
                 {
@@ -112,12 +115,53 @@ client.on("guildMemberUpdate", async (oldMember, newMember) => {
 
             console.log(`✅ New verified member stored: ${newMember.user.username}`);
 
+            // Step 2: Update Player.member reference
             if (memberDoc?._id) {
                 await updatePlayerMemberReference(newMember.id, memberDoc._id);
             }
+
+            // Step 3: Fetch player by discordID (case-sensitive match!)
+            const player = await Player.findOne({ discordID: newMember.id });
+            if (!player) {
+                console.log(`ℹ️ No player found for ${newMember.user.username}, skipping role assignment.`);
+                return;
+            }
+
+            const guild = await client.guilds.fetch(GUILD_ID);
+            const member = await guild.members.fetch(newMember.id);
+
+            const PLAYER_ROLE_ID = "1419359929688657920";
+            const CAPTAIN_ROLE_ID = "1409252277830549655";
+            const VICE_CAPTAIN_ROLE_ID = "1419363127723560960";
+
+            // Step 4: If player has a current team, get it
+            if (!player.currentTeam) {
+                console.log(`ℹ️ ${newMember.user.username} is not in a team (no currentTeam).`);
+                return;
+            }
+
+            const team = await Team.findById(player.currentTeam);
+            if (!team) {
+                console.log(`⚠️ Team not found for player ${newMember.user.username}.`);
+                return;
+            }
+
+            // Step 5: Assign roles based on team structure
+            await member.roles.add(PLAYER_ROLE_ID);
+            console.log(`🏅 Player role added to ${newMember.user.username}`);
+
+            if (team.captain?.toString() === player._id.toString()) {
+                await member.roles.add(CAPTAIN_ROLE_ID);
+                console.log(`👑 Captain role added to ${newMember.user.username}`);
+            }
+
+            if (team.viceCaptain?.toString() === player._id.toString()) {
+                await member.roles.add(VICE_CAPTAIN_ROLE_ID);
+                console.log(`🎖 Vice Captain role added to ${newMember.user.username}`);
+            }
         }
     } catch (err) {
-        console.error("Error storing new verified member:", err);
+        console.error("❌ Error handling verified member:", err);
     }
 });
 
