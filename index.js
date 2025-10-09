@@ -35,7 +35,7 @@ async function connectDB() {
     }
 }
 
-const updatePlayerMemberReference = async (discordId, newMemberId) => {
+const updatePlayerMemberReference = async (discordId, newMemberId, username) => {
     try {
         const currentPlayer = await Player.findOne({ discordId });
 
@@ -46,9 +46,10 @@ const updatePlayerMemberReference = async (discordId, newMemberId) => {
 
         const oldMemberId = currentPlayer.member;
 
+
         const player = await Player.findOneAndUpdate(
             { discordId },
-            { member: newMemberId },
+            { member: newMemberId, discordName: username },
             { new: true }
         ).populate("member");
 
@@ -117,7 +118,7 @@ client.on("guildMemberUpdate", async (oldMember, newMember) => {
 
             // Step 2: Update Player.member reference
             if (memberDoc?._id) {
-                await updatePlayerMemberReference(newMember.id, memberDoc._id);
+                await updatePlayerMemberReference(newMember.id, memberDoc._id, newMember.user.username);
             }
 
             // Step 3: Fetch player by discordID (case-sensitive match!)
@@ -180,16 +181,15 @@ client.on("guildMemberRemove", async (member) => {
 client.on("userUpdate", async (oldUser, newUser) => {
     try {
         // Only update if username or discriminator changed
-        if (
-            oldUser.username !== newUser.username ||
-            oldUser.discriminator !== newUser.discriminator
-        ) {
+        if (oldUser.username !== newUser.username) {
             // Update in MongoDB for all records with this discordId
             const updated = await Member.findOneAndUpdate(
                 { discordId: newUser.id },
                 { discordName: `${newUser.username}` },
                 { new: true }
             );
+
+            await Player.findOneAndUpdate({ discordId: newUser.id }, { discordName: newUser.username });
 
             if (updated) {
                 console.log(
