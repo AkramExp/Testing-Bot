@@ -66,6 +66,8 @@ const updatePlayerMemberReference = async (discordId, newMemberId, username) => 
     }
 };
 
+console.log(client.isReady);
+
 client.once("ready", async () => {
     console.log(`Logged in as ${client.user.tag}`);
     await connectDB();
