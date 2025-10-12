@@ -23,8 +23,6 @@ const GUILD_ID = process.env.GUILD_ID;
 const VERIFIED_ROLE_ID = process.env.VERIFIED_ROLE_ID;
 const MONGODB_URI = process.env.MONGODB_URI;
 
-console.log(client, BOT_TOKEN, GUILD_ID, VERIFIED_ROLE_ID, MONGODB_URI)
-
 async function connectDB() {
     try {
         await mongoose.connect(MONGODB_URI, {
